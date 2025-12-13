@@ -5,7 +5,6 @@ import com.appointment.dto.SignupRequest;
 import com.appointment.entity.User;
 import com.appointment.repository.UserRepository;
 import com.appointment.security.JwtTokenProvider;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
