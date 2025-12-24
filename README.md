@@ -1,4 +1,4 @@
-Bookizy - Doctor Appointment Booking System
+### Bookizy - Doctor Appointment Booking System
 A real-time token-based appointment booking system for clinics with patient and receptionist interfaces.
 Tech Stack
 Backend: Java 17, Spring Boot 3.2.0, Spring Security, JWT, WebSocket, JPA/Hibernate
