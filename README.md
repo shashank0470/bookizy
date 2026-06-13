@@ -1,221 +1,247 @@
+<div align="center">
+
+# 🏥 Bookizy
+
+**A real-time clinic queue and token booking system**
+
+Patients book queue tokens at nearby clinics and track live wait times — receptionists manage the queue from a live dashboard, all synced via WebSocket.
+
+[![Java](https://img.shields.io/badge/Java-ED8B00?style=flat&logo=openjdk&logoColor=white)]()
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-6DB33F?style=flat&logo=springboot&logoColor=white)]()
+[![React](https://img.shields.io/badge/React-20232A?style=flat&logo=react&logoColor=61DAFB)]()
+[![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=mysql&logoColor=white)]()
+[![JWT](https://img.shields.io/badge/JWT-black?style=flat&logo=JSON%20web%20tokens)]()
+[![WebSocket](https://img.shields.io/badge/WebSocket-STOMP-informational?style=flat)]()
+
+</div>
+
+---
+
+## 📌 What It Does
+
+Most clinic queues are opaque — you show up, get a token, and wait blindly. Bookizy fixes that.
+
+- Patients book tokens remotely and watch the live queue update in real time
+- Estimated wait time recalculates automatically as the queue changes
+- Receptionists control token flow from a dedicated dashboard — no page refreshes needed
+- All clients stay in sync via WebSocket subscriptions
+
+---
+
+## ✨ Features
+
+### For Patients
+- JWT-based signup and login
+- Browse clinics by doctor, specialization, timing, and address
+- Book a queue token (one active token per clinic at a time)
+- Live queue view with real-time updates via WebSocket
+- Dynamic wait-time estimate based on patients ahead × clinic's average minutes per patient
+- Cancel an active booking
+- View active bookings and manage profile
+
+### For Receptionists
+- Full patient queue view with names and ages
+- Update token status: `waiting → arrived → serving → completed / skipped / cancelled`
+- **Serve next** — auto-advances the first `arrived` token to `serving`
+- Remove tokens from the queue
+- Real-time sync via WebSocket (no manual refresh needed)
+
+---
+
+## ⚙️ Tech Stack
+
+| Layer | Technologies |
+|---|---|
+| Frontend | React 18, Vite, React Router, Axios, SockJS, STOMP.js |
+| Backend | Spring Boot 3.2, Spring Security, Spring Data JPA, WebSocket (STOMP) |
+| Database | MySQL 8 |
+| Auth | JWT (JJWT), BCrypt password hashing |
+| Build | Gradle (backend), npm (frontend) |
+
+---
+
+## 🔄 How It Works
+
 ```
-### Bookizy - Doctor Appointment Booking System
+Patient books token
+       ↓
+Backend assigns next token number for that clinic (resets daily)
+       ↓
+WebSocket broadcasts queue change to /topic/clinic/{clinicId}
+       ↓
+All connected patients & receptionists refresh automatically
+```
 
-A real-time token-based appointment booking system for clinics with patient and receptionist interfaces.
-Tech Stack
-Backend: Java 17, Spring Boot 3.2.0, Spring Security, JWT, WebSocket, JPA/Hibernate
-Frontend: React 18, Vite, Axios, SockJS, StompJS
-Database: MySQL
+**Wait time formula:** `patients ahead × clinic's average minutes per patient`
 
-Features
+### Token Lifecycle
 
-Patient:
-~Browse available clinics
-~Book a token with patient's name and age
-~View live queue with real-time updates
-~See estimated waiting time
-~Cancel own token
-~Token privacy (only see own details)
+```
+WAITING → ARRIVED → SERVING → COMPLETED
+                ↘              ↗
+               SKIPPED / CANCELLED
+```
 
-Receptionist:
-~Manage clinic queue
-~View all patient details (name, age, token)
-~Update patient status (waiting, arrived, serving, completed, skipped, cancelled)
-~"Serve Next" functionality
-~Remove/cancel tokens
-~Real-time queue synchronization
+| Status | Description |
+|---|---|
+| `waiting` | Booked, not yet at the clinic |
+| `arrived` | Patient checked in at reception |
+| `serving` | Currently with the doctor |
+| `completed` | Visit finished |
+| `skipped` | Patient skipped |
+| `cancelled` | Booking cancelled |
 
-Prerequisites:
-~Java 17+
-~Node.js 16+
-~MySQL 8+
-~Gradle
+---
 
-Installation
-1. Clone Repository
-   git clone https://github.com/shashank0470/bookizy.git
-   cd bookizy
+## 🚀 Getting Started
 
-2. Database Setup
-   CREATE DATABASE appointment_db;
-   USE appointment_db;
-3. Backend Setup
-   Update backend/src/main/resources/application.properties:
-   spring.datasource.url=jdbc:mysql://localhost:3306/appointment_db
-   spring.datasource.username=YOUR_MYSQL_USERNAME
-   spring.datasource.password=YOUR_MYSQL_PASSWORD
-   jwt.secret=yourSecretKeyHereMakeItLongAndSecureForProductionUse123456789
+### Prerequisites
+- Java 17+
+- Node.js 18+ and npm
+- MySQL 8 running locally
 
-Run backend:
+### 1. Database Setup
+
+```sql
+CREATE DATABASE IF NOT EXISTS appointment_db;
+```
+
+Update `backend/src/main/resources/application.properties`:
+
+```properties
+spring.datasource.url=jdbc:mysql://localhost:3306/appointment_db?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+spring.datasource.username=root
+spring.datasource.password=YOUR_PASSWORD
+```
+
+> ⚠️ Change the default `jwt.secret` before deploying to production.
+
+### 2. Run the Backend
+
+```bash
 cd backend
-./gradlew bootRun
+./gradlew bootRun        # Linux / macOS
+gradlew.bat bootRun      # Windows
+```
 
-Backend runs on http://localhost:8080
+API starts at `http://localhost:8080`
 
-4. Frontend Setup
-   cd frontend
-   npm install
-   npm run dev
-Frontend runs on http://localhost:5173
+On first run, four sample clinics are seeded automatically:
+- City Clinic — General
+- Downtown Care — Pediatrics
+- Skin Health — Dermatology
+- Uptown Dental — Dentistry
 
---->Initial Data Setup
+### 3. Run the Frontend
 
-Add Clinic:
-USE appointment_db:
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-INSERT INTO clinics (name, doctor_name, specialization, timing, address, avg_time_per_patient)
-VALUES ('City Clinic', 'Dr. Smith', 'General Physician', '9 AM - 5 PM', '123 Main St, Delhi', 15);
+App opens at `http://localhost:5173`
 
-Create Receptionist :
-1. Sign up at http://localhost:5173/signup:
-    Name: Receptionist
-    Email: receptionist@clinic.com
-    Password: test123
+---
 
-2. Update role in database:
+## 📁 Project Structure
 
-UPDATE users 
-SET role = 'RECEPTIONIST', clinic_id = 1 
-WHERE email = 'receptionist@clinic.com';
+```
+bookizy/
+├── backend/                    # Spring Boot REST API + WebSocket server
+│   └── src/main/java/com/appointment/
+│       ├── controller/         # Auth, Clinic, Token, Receptionist endpoints
+│       ├── service/            # Business logic
+│       ├── entity/             # User, Clinic, Token models
+│       ├── repository/         # JPA repositories
+│       ├── security/           # JWT filter & token provider
+│       └── config/             # Security, WebSocket, seed data
+│
+└── frontend/                   # React SPA
+    └── src/
+        ├── components/
+        │   ├── Auth/           # Login, Signup
+        │   ├── Patient/        # Dashboard, ClinicList, ClinicQueue, MyBookings, Profile
+        │   └── Receptionist/   # ReceptionistDashboard
+        ├── services/           # API client & WebSocket helpers
+        └── utils/              # Auth helpers (localStorage)
+```
 
+---
 
-### Create Patient (Optional)
+## 🔌 API Reference
 
-**Signup at** `http://localhost:5173/signup`:
-- Name: Patient User
-- Email: patient@test.com
-- Password: test123
+### Auth
 
-## Usage
-
-### Patient Flow
-
-1. Login at `http://localhost:5173/login`
-2. Browse clinic list
-3. Click "Book Token" on desired clinic
-4. Enter patient name and age
-5. View live queue and estimated wait time
-6. Cancel token if needed
-
-### Receptionist Flow
-
-1. Login at `http://localhost:5173/login` (auto-redirects to dashboard)
-2. View all patients in the queue with names
-3. Update patient status via dropdown
-4. Use the "Serve Next" button for the next patient
-5. Remove tokens as needed
-
-## API Endpoints
-
-### Authentication
-- `POST /api/auth/signup` - User registration
-- `POST /api/auth/login` - User login
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/api/auth/signup` | Register a new patient | Public |
+| POST | `/api/auth/login` | Login, returns JWT | Public |
 
 ### Clinics
-- `GET /api/clinics` - Get all clinics
-- `GET /api/clinics/{id}` - Get clinic by ID
+
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/api/clinics` | List all clinics | Public |
+| GET | `/api/clinics/{id}` | Get clinic details | Public |
 
 ### Tokens (Patient)
-- `POST /api/tokens/clinic/{clinicId}` - Book token
-- `GET /api/tokens/clinic/{clinicId}/queue` - Get queue
-- `GET /api/tokens/clinic/{clinicId}/my-token` - Get my token
-- `DELETE /api/tokens/{tokenId}` - Cancel token
 
-### Receptionist
-- `GET /api/receptionist/clinic/{clinicId}/queue` - Get full queue
-- `PUT /api/receptionist/token/{tokenId}/status` - Update status
-- `POST /api/receptionist/clinic/{clinicId}/serve-next` - Serve next
-- `DELETE /api/receptionist/token/{tokenId}` - Remove token
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| POST | `/api/tokens/clinic/{clinicId}` | Book a token | JWT |
+| GET | `/api/tokens/clinic/{clinicId}/queue` | Live queue (privacy-aware) | JWT |
+| GET | `/api/tokens/clinic/{clinicId}/my-token` | Get your active token | JWT |
+| DELETE | `/api/tokens/{tokenId}` | Cancel your token | JWT |
 
-## WebSocket
+### Queue Management (Receptionist)
 
-Real-time updates via WebSocket on `/ws` endpoint.  
-Subscribes to `/topic/clinic/{clinicId}` for queue updates.
+| Method | Endpoint | Description | Auth |
+|---|---|---|---|
+| GET | `/api/receptionist/clinic/{clinicId}/queue` | Full queue view | Public* |
+| PUT | `/api/receptionist/token/{tokenId}/status` | Update token status | Public* |
+| POST | `/api/receptionist/clinic/{clinicId}/serve-next` | Serve next arrived patient | Public* |
+| DELETE | `/api/receptionist/token/{tokenId}` | Remove token from queue | Public* |
 
+> *⚠️ Receptionist routes are currently open in `SecurityConfig` — restrict with role-based auth before deploying to production.*
 
-## Project Structure
-bookizy/
-├── backend/
-│   ├── src/main/java/com/appointment/
-│   │   ├── config/          # Security, WebSocket config
-│   │   ├── controller/      # REST controllers
-│   │   ├── dto/             # Data transfer objects
-│   │   ├── entity/          # JPA entities
-│   │   ├── repository/      # Database repositories
-│   │   ├── security/        # JWT authentication
-│   │   └── service/         # Business logic
-│   ├── build.gradle
-│   └── settings.gradle
-└── frontend/
-    ├── src/
-    │   ├── components/      # React components
-    │   ├── services/        # API & WebSocket
-    │   └── utils/           # Helper functions
-    ├── package.json
-    └── vite.config.js
-    
---->Key Features Implementation
+**WebSocket:** `ws://localhost:8080/ws` → subscribe to `/topic/clinic/{clinicId}`
 
-Real-Time Queue Updates
-Uses WebSocket (SockJS + STOMP) for instant queue synchronization across all users.
+---
 
-Estimated Wait Time
-Calculated as: (patients ahead) × 15 minutes
-Updates automatically on queue changes.
+## 👥 User Roles
 
-Token Privacy
-~Patients see only a token number of others
-~Own token shows full details
-~The receptionist sees all patient information
+| Role | Access |
+|---|---|
+| `PATIENT` | Default on signup — dashboard, booking, queue view |
+| `RECEPTIONIST` | Queue management at `/receptionist/{clinicId}` |
+| `ADMIN` | Defined in backend; no UI yet |
 
-Status Management
-~waiting - Booked but not arrived
-~arrived - Patient physically present
-~serving - Currently with doctor
-~completed - Consultation finished
-~skipped - Patient didn't respond
-~cancelled - Token cancelled
+> Receptionist accounts must currently be created directly in the database (signup always assigns `PATIENT`).
 
--->Troubleshooting
+---
 
-Backend won't start
-~Check MySQL is running
-~Verify database credentials in application.properties
-~Ensure port 8080 is free
+## 🗺️ Demo Flow
 
-Frontend shows white screen
-~Check backend is running
-~Verify WebSocket connection
-~Check browser console for errors
+1. **Sign up** and **log in** as a patient
+2. Open **Available Clinics** → click **Book Token**
+3. Enter patient details → view your token number and the live queue
+4. Open a second tab → log in as a receptionist → manage statuses and serve patients
+5. Watch both tabs update in real time via WebSocket
 
-Login fails with "Bad Credentials."
-~Create user via signup page (not manual SQL)
-~Password must match BCrypt encoding
+---
 
-WebSocket not connecting
-~Ensure SockJS endpoint /ws is accessible
-~Check CORS configuration
-~Verify port 8080 is not blocked
+## 🛣️ Roadmap
 
-Security Notes
-~JWT secret should be changed in production
-~CORS is configured for localhost - update for production
-~Passwords are encrypted with BCrypt
-~All API endpoints except auth are protected
+- [ ] Receptionist signup flow and admin panel for user management
+- [ ] Role-based authorization on receptionist API routes
+- [ ] Appointment date/time picker in booking form (backend already supports this)
+- [ ] Backend endpoint for profile updates
+- [ ] Fix cancel button in My Bookings
+- [ ] `.env`-based config for API URL and secrets
 
-Future Enhancements
-~Admin panel for clinic management
-~Email/SMS notifications
-~Appointment history
-~Rating system
-~Multi-language support
-~Payment integration
+---
 
-License
-MIT
-Author
-Shashank
-Repository
-https://github.com/shashank0470/bookizy.git
+## 📄 License
 
-```
+Open source — free for personal and educational use.
